@@ -110,15 +110,13 @@ fn main() -> Result<()> {
         )
         .exec()?;
 
+
         let deepcopytable = scope.create_function(|_, original: Value| {
             deep_copy_table(&lua, original)
         })?;
         lua.globals().set("DeepCopyTable", deepcopytable)?;
 
-
-        println!("We're going!");
-
-        let now = SystemTime::now();
+        let now: SystemTime = SystemTime::now();
 
         // load and run script
         let _ = load_lua_file(&lua, route_finder_script);
@@ -126,11 +124,11 @@ fn main() -> Result<()> {
         match now.elapsed() {
             Ok(elapsed) => {
                 // it prints '2'
-                println!("{}", elapsed.as_secs());
+                println!("Took {} seconds.", elapsed.as_millis() as f32 / 1000.0);
             }
             Err(e) => {
                 // an error occurred!
-                println!("Error: {e:?}");
+                println!("Error while timing: {e:?}");
             }
         }
         Ok(())
