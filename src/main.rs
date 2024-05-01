@@ -12,7 +12,7 @@ use rng::SggPcg;
 use save::UncompressedSize;
 use std::cell::RefCell;
 use std::fs;
-use std::io::Write;
+use std::time::{Duration, SystemTime};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
@@ -110,9 +110,29 @@ fn main() -> Result<()> {
         )
         .exec()?;
 
+        let deepcopytable = scope.create_function(|_, original: Value| {
+            deep_copy_table(&lua, original)
+        })?;
+        lua.globals().set("DeepCopyTable", deepcopytable)?;
+
+
+        println!("We're going!");
+
+        let now = SystemTime::now();
+
         // load and run script
         let _ = load_lua_file(&lua, route_finder_script);
 
+        match now.elapsed() {
+            Ok(elapsed) => {
+                // it prints '2'
+                println!("{}", elapsed.as_secs());
+            }
+            Err(e) => {
+                // an error occurred!
+                println!("Error: {e:?}");
+            }
+        }
         Ok(())
     })?;
 
@@ -172,4 +192,19 @@ fn bounded(rng: &mut SggPcg, bound: u32) -> u32 {
 
 fn rand_double(rng: &mut SggPcg) -> f64 {
     ldexp(rng.next_u32() as f64, -32)
+}
+
+fn deep_copy_table<'lua>(lua: &'lua Lua, original: Value<'lua>) -> Result<Value<'lua>, mlua::Error> {
+    if original.is_table() {
+        let copy: Table = lua.create_table()?;
+        if let Some(original_table) = original.as_table() {
+            original_table.for_each::<Value, Value>(|key, value| {
+                copy.set(key, deep_copy_table(&lua, value)?)
+            })?;
+        }
+
+        Ok(mlua::Value::Table(copy))
+    } else {
+        Ok(original.clone())
+    }
 }
