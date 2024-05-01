@@ -12,7 +12,7 @@ use rng::SggPcg;
 use save::UncompressedSize;
 use std::cell::RefCell;
 use std::fs;
-use std::time::{Duration, SystemTime};
+use std::time::SystemTime;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
